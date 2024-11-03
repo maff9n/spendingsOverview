@@ -171,3 +171,5 @@ function newMonthNewTab(){
   motivation.display(currentSheet)
   
 }
+
+module.exports = { newMonthNewTab, creditLeft, spendings, income, motivation, createSheetName};
