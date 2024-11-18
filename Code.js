@@ -11,16 +11,13 @@ const creditLeft = {
 
 const spendings = {
   cornerStone: "A4",
-  headers: ["Beschreibung", "Betrag", "Wiederkehrend?", "Start Monat"],
+  spendingListLength : 100,
+  headers: ["Beschreibung", "Betrag", "Wiederkehrend", "Start Monat"],
   typesList: { 
-    range: ['Ausstehend', 'Monatlich', 'Zweimonatlich', 'Vierteljährlich', 'Halbjährlich', 'Jährlich'],
-    start: "C6",
-    end: "C10"
+    range: ['Ausstehend', 'Monatlich', 'Zweimonatlich', 'Vierteljährlich', 'Halbjährlich', 'Jährlich']
   },
   monthsList: { 
-    range: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
-    start: "D6",
-    end: "D10"
+    range: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
   },
   display: function(sheet) {
     const titleCell = sheet.getRange(this.cornerStone).setValue("Ausgaben");
@@ -34,8 +31,10 @@ const spendings = {
     this.applyDataValidation(sheet);
   },
   applyDataValidation: function(sheet) {
-    const typeRange = sheet.getRange(`${this.typesList.start}:${this.typesList.end}`);
-    const monthRange = sheet.getRange(`${this.monthsList.start}:${this.monthsList.end}`);
+    const cornerStone = sheet.getRange(this.cornerStone);
+    const typeRange = sheet.getRange(cornerStone.offset(2, 2).getA1Notation() + ':' + cornerStone.offset(2+this.spendingListLength, 2).getA1Notation());
+    const monthRange = sheet.getRange(cornerStone.offset(2, 3).getA1Notation() + ':' + cornerStone.offset(2+this.spendingListLength, 3).getA1Notation());
+
     
     typeRange.setDataValidation(
       SpreadsheetApp.newDataValidation()
@@ -52,30 +51,21 @@ const spendings = {
     );
   },
   parse: function(sheet, previousSheet){
-    const titleCell = sheet.getRange(this.cornerStone);
-    previousSheet.getRange(`${this.monthsList.start}:${this.monthsList.end}`).getValues().forEach(
-    (_a, index) => {
-      const entryName = previousSheet.getRange(this.monthsList.start).offset(index, -3)
-      const entryAmount = previousSheet.getRange(this.monthsList.start).offset(index, -2)
-      const entryRecurring = previousSheet.getRange(this.monthsList.start).offset(index, -1)
-      const entryMonth = previousSheet.getRange(this.monthsList.start).offset(index, 0)
-      if (entryName.getValue() !== "" && entryName.getValue() !== null) {
-        if (entryAmount.getValue() !== "" && entryAmount.getValue() !== null) {
-          if (entryRecurring.getValue() !== "" && entryRecurring.getValue() !== null) {
-            sheet.getRange(entryName.getA1Notation()).setValue(entryName.getValue())
-            sheet.getRange(entryAmount.getA1Notation()).setValue(entryAmount.getValue())
-            sheet.getRange(entryRecurring.getA1Notation()).setValue(entryRecurring.getValue())
-            sheet.getRange(entryMonth.getA1Notation()).setValue(entryMonth.getValue())
-          }
-        } 
-      }
-    })
+    const prevCornerStone = previousSheet.getRange(this.cornerStone);
+    const cornerStone = sheet.getRange(this.cornerStone);
+    let prevEntries = previousSheet.getRange(prevCornerStone.offset(2,0).getA1Notation() + ':' + prevCornerStone.offset(2+this.spendingListLength, 3).getA1Notation()).getValues();
+
+    prevEntries = prevEntries.filter(obj => obj[2] !== '' && obj[2] !== null)
+                    .sort((first, second) => first[1] - second[1])
+                      .reverse()
+    
+    sheet.getRange(cornerStone.offset(2, 0).getA1Notation() + ':' + cornerStone.offset(2+prevEntries.length-1, 3).getA1Notation()).setValues(prevEntries);
   }
 }
 
 const income = {
   cornerStone: "F1",
-  headers: ["Beschreibung", "Betrag", "Wiederkehrend?", "Start Monat"],
+  headers: ["Beschreibung", "Betrag", "Wiederkehrend", "Start Monat"],
   typesList: { 
     range: ['Ausstehend', 'Monatlich', 'Zweimonatlich', 'Vierteljährlich', 'Halbjährlich', 'Jährlich'],
     start: "H3",
@@ -171,5 +161,3 @@ function newMonthNewTab(){
   motivation.display(currentSheet)
   
 }
-
-module.exports = { newMonthNewTab, creditLeft, spendings, income, motivation, createSheetName};
